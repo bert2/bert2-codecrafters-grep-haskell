@@ -1,25 +1,23 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Main where
 
-import System.Environment
 import System.Exit
-import Lib
-
-matchPattern :: String -> String -> Bool
-matchPattern pattern input = do
-  if length pattern == 1
-    then head pattern `elem` input
-    else error $ "Unhandled pattern: " ++ pattern
+import qualified Args
 
 main :: IO ()
 main = do
-  args <- getArgs
-  let pattern = args !! 1
-  input_line <- getLine
+  let usage = "'./hs-grep-clone-exe -E pattern [input]'"
+  Args.expectOrExit "-E" 0 usage
+  pattern <- Args.getOrExit 1 usage
+  input <- Args.getOrPrompt 2 "Input: "
 
-  if head args /= "-E"
-    then do
-      putStrLn "Expected first argument to be '-E'"
-      exitFailure
-    else do if matchPattern pattern input_line
-              then exitSuccess
-              else exitFailure
+  if matchPattern pattern input
+    then exitSuccess
+    else exitFailure
+
+matchPattern :: String -> String -> Bool
+matchPattern pattern input =
+  if length pattern == 1
+    then head pattern `elem` input
+    else error $ "Unhandled pattern: " ++ pattern
