@@ -2,6 +2,7 @@ module Main where
 
 import System.Environment
 import System.Exit
+import Lib
 
 matchPattern :: String -> String -> Bool
 matchPattern pattern input = do
@@ -15,14 +16,10 @@ main = do
   let pattern = args !! 1
   input_line <- getLine
 
-  -- You can use print statements as follows for debugging, they'll be visible when running tests.
-  putStrLn "Logs from your program will appear here"
-
-  -- Uncomment this block to pass stage 1
-  -- if head args /= "-E"
-  --   then do
-  --     putStrLn "Expected first argument to be '-E'"
-  --     exitFailure
-  --   else do if matchPattern pattern input_line
-  --             then exitSuccess
-  --             else exitFailure
+  if head args /= "-E"
+    then do
+      putStrLn "Expected first argument to be '-E'"
+      exitFailure
+    else do if matchPattern pattern input_line
+              then exitSuccess
+              else exitFailure
