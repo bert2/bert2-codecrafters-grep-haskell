@@ -1,23 +1,32 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Main where
 
-import System.Exit
-import qualified Args
+import           Data.Either
+import qualified MyGrep.Args as Args
+import           MyGrep.NFA.Base
+import           MyGrep.NFA.Build
+import           MyGrep.NFA.Eval
+import           MyGrep.NFA.Print
+import           MyGrep.NFA.Run
+import           MyGrep.NFA.Show
+import           MyGrep.Parser
+import           System.Exit
 
 main :: IO ()
 main = do
   let usage = "'./hs-grep-clone-exe -E pattern [input]'"
-  Args.expectOrExit "-E" 0 usage
-  pattern <- Args.getOrExit 1 usage
-  input <- Args.getOrPrompt 2 "Input: "
+  Args.expectSwitchOrExit "-E" usage
+  printGraph <- Args.hasSwitch "-g"
+  pattern <- Args.getPositionalOrExit 0 usage
+  input <- Args.getPositionalOrPrompt 1 "Input: "
 
-  if matchPattern pattern input
-    then exitSuccess
-    else exitFailure
+  nfab <- either die return $ parseRegex pattern
+  let nfa = buildNFA nfab
+  putStrLn $ show nfa
+  -- putStrLn $ printDotScript nfa
 
-matchPattern :: String -> String -> Bool
-matchPattern pattern input =
-  if length pattern == 1
-    then head pattern `elem` input
-    else error $ "Unhandled pattern: " ++ pattern
+  if printGraph
+    then putStrLn $ printGravizoLink nfa
+    else return ()
+
+  let match = runNFA nfa input
+  if match then exitSuccess else exitFailure
