@@ -1,5 +1,6 @@
 module Main where
 
+import           Control.Monad (when)
 import           Data.Either
 import qualified MyGrep.Args as Args
 import           MyGrep.NFA.Base
@@ -24,9 +25,8 @@ main = do
   -- putStrLn $ show nfa
   -- putStrLn $ printDotScript nfa
 
-  if printGraph
-    then putStrLn $ printGravizoLink nfa
-    else return ()
+  when printGraph $ putStrLn $ printGravizoLink nfa
 
-  let match = runNFA nfa input
-  if match then exitSuccess else exitFailure
+  if runNFA nfa input
+    then exitSuccess
+    else exitFailure
