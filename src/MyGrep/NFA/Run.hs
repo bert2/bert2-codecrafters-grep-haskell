@@ -1,13 +1,13 @@
 module MyGrep.NFA.Run (runNFA) where
 
-import           Control.Monad (liftM2)
-import qualified Data.HashSet as Set (empty, insert, member)
-import           Data.HashSet (HashSet)
-import           Data.Function ((&))
-import           Data.Maybe (catMaybes)
-import           GHC.Arr (inRange)
-import           MyGrep.NFA.Base
-import           MyGrep.NFA.Eval
+import Control.Monad (liftM2)
+import Data.HashSet qualified as Set (empty, insert, member)
+import Data.HashSet (HashSet)
+import Data.Function ((&))
+import Data.Maybe (catMaybes)
+import GHC.Arr (inRange)
+import MyGrep.NFA.Base
+import MyGrep.NFA.Eval
 
 runNFA :: State -> String -> Bool
 runNFA start = elem Final . foldl consume (expand start)

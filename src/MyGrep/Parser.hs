@@ -1,12 +1,12 @@
 module MyGrep.Parser (parseRegex) where
 
-import           Data.Bifunctor
-import           Data.Functor ((<&>), ($>))
-import           Data.Maybe
-import           Data.Void (Void)
-import qualified MyGrep.NFA.Build as NFA
-import           Text.Megaparsec
-import           Text.Megaparsec.Char
+import Data.Bifunctor
+import Data.Functor ((<&>), ($>))
+import Data.Maybe
+import Data.Void (Void)
+import MyGrep.NFA.Build qualified as NFA
+import Text.Megaparsec
+import Text.Megaparsec.Char
 
 type Parser = Parsec Void String
 

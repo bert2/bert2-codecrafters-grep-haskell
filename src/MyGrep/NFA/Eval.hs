@@ -1,11 +1,11 @@
 module MyGrep.NFA.Eval (evalNFA, getOrMakeStateId, EvalState) where
 
-import qualified Control.Monad.State.Lazy as M
-import qualified Data.HashMap.Lazy as Map (empty, insert, lookup)
-import           Data.HashMap.Lazy (HashMap)
-import qualified Data.HashSet as Set (empty, insert, member)
-import           Data.HashSet (HashSet)
-import           MyGrep.NFA.Base
+import Control.Monad.State.Lazy qualified as M
+import Data.HashMap.Lazy qualified as Map (empty, insert, lookup)
+import Data.HashMap.Lazy (HashMap)
+import Data.HashSet qualified as Set (empty, insert, member)
+import Data.HashSet (HashSet)
+import MyGrep.NFA.Base
 
 type EvalState = M.State Context
 

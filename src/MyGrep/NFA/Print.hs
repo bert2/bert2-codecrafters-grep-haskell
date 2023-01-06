@@ -1,9 +1,9 @@
 module MyGrep.NFA.Print (printDotScript, printGravizoLink) where
 
-import           Data.List (intersperse)
-import           MyGrep.NFA.Base
-import           MyGrep.NFA.Eval
-import qualified MyGrep.URI as URI
+import Data.List (intersperse)
+import MyGrep.NFA.Base
+import MyGrep.NFA.Eval
+import MyGrep.URI qualified as URI
 
 data Edge = Edge {from :: String, to :: String, lbl :: Maybe String}
 
