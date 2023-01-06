@@ -25,7 +25,8 @@ main = do
   -- putStrLn $ show nfa
   -- putStrLn $ printDotScript nfa
 
-  when printGraph $ putStrLn $ printGravizoLink nfa
+  when printGraph do
+    putStrLn $ printGravizoLink nfa
 
   if runNFA nfa input
     then exitSuccess

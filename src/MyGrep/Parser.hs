@@ -22,7 +22,10 @@ regex = do
 
 regex' :: Parser NFA.StateB
 regex' = choice [
-  wordCharClass    $> NFA.oneOf [NFA.charRange ('0', '9'), NFA.charRange ('A', 'Z'), NFA.charRange ('a', 'z'), NFA.literalChar '_'],
+  wordCharClass    $> NFA.oneOf [NFA.charRange ('0', '9'),
+                                 NFA.charRange ('A', 'Z'),
+                                 NFA.charRange ('a', 'z'),
+                                 NFA.literalChar '_'],
   digitCharClass   $> NFA.charRange ('0', '9'),
   escapedChar     <&> NFA.literalChar,
   literalChar     <&> NFA.literalChar]

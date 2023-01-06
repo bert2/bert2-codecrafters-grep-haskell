@@ -9,7 +9,10 @@ import MyGrep.NFA.Base
 
 type EvalState = M.State Context
 
-data Context = Context { lastId :: Int, stateIds :: HashMap State Int, visited :: HashSet State}
+data Context = Context {
+  lastId :: Int,
+  stateIds :: HashMap State Int,
+  visited :: HashSet State}
 
 evalNFA :: (State -> EvalState a)
         -> ((State -> EvalState a) -> State -> EvalState a)
@@ -17,11 +20,7 @@ evalNFA :: (State -> EvalState a)
         -> a
 evalNFA visitedDefault evalUnvisited s =
   M.evalState (evalNFA' visitedDefault evalUnvisited s) (Context 0 Map.empty Set.empty)
-  where evalNFA' :: (State -> EvalState a)
-                 -> ((State -> EvalState a) -> State -> EvalState a)
-                 -> State
-                 -> EvalState a
-        evalNFA' visitedDefault evalUnvisited s = do
+  where evalNFA' visitedDefault evalUnvisited s = do
           visited <- wasVisited s
           if visited
             then visitedDefault s

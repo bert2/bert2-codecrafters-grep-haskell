@@ -15,9 +15,9 @@ data Match = AnyChar
            deriving (Eq, Ord, Show)
 
 instance Eq State where
-  x == y = unsafePerformIO $
+  x == y = unsafePerformIO do
     liftM2 eqStableName (makeStableName x) (makeStableName y)
 
 instance Hashable State where
-  hashWithSalt salt state = unsafePerformIO $
+  hashWithSalt salt state = unsafePerformIO do
     hashWithSalt salt <$> makeStableName state

@@ -26,6 +26,6 @@ expand = evalNFA visitedDefault evalUnvisited
   where visitedDefault :: State -> EvalState [State]
         visitedDefault _ = return []
         evalUnvisited :: ((State -> EvalState [State]) -> State -> EvalState [State])
-        evalUnvisited evalNext s = case s of
+        evalUnvisited evalNext = \case
           (Split l r) -> liftM2 (++) (evalNext l) (evalNext r)
-          _           -> return [s]
+          s           -> return [s]
