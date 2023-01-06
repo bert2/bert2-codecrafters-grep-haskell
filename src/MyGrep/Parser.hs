@@ -20,12 +20,12 @@ regex = do
   end <- endAnchorOrAnyString <* eof
   return [start, pattern, end]
 
--- TODO: accept escaped special chars
 regex' :: Parser NFA.StateB
 regex' = choice [
-  digitClass   $> NFA.charRange ('0', '9'),
-  escapedChar <&> NFA.literalChar,
-  literalChar <&> NFA.literalChar]
+  wordCharClass    $> NFA.oneOf [NFA.charRange ('0', '9'), NFA.charRange ('A', 'Z'), NFA.charRange ('a', 'z'), NFA.literalChar '_'],
+  digitCharClass   $> NFA.charRange ('0', '9'),
+  escapedChar     <&> NFA.literalChar,
+  literalChar     <&> NFA.literalChar]
 
 startAnchorOrAnyString :: Parser NFA.StateB
 startAnchorOrAnyString = maybe NFA.anyString (const mempty) <$> optional (char '^')
@@ -33,8 +33,11 @@ startAnchorOrAnyString = maybe NFA.anyString (const mempty) <$> optional (char '
 endAnchorOrAnyString :: Parser NFA.StateB
 endAnchorOrAnyString = maybe NFA.anyString (const mempty) <$> optional (char '$')
 
-digitClass :: Parser ()
-digitClass = () <$ string "\\d"
+digitCharClass :: Parser ()
+digitCharClass = () <$ string "\\d"
+
+wordCharClass :: Parser ()
+wordCharClass = () <$ string "\\w"
 
 literalChar :: Parser Char
 literalChar = noneOf ['^', '$', '\\'] <?> "literal character"

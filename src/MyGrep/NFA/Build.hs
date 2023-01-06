@@ -3,7 +3,7 @@
 module MyGrep.NFA.Build (
   StateB, buildNFA,
   anyChar, anyString, literalChar, charRange,
-  alternation, zeroOrOne, zeroOrMore, oneOrMore
+  alternation, oneOf, zeroOrOne, zeroOrMore, oneOrMore
 ) where
 
 import Data.Monoid
@@ -34,6 +34,9 @@ charRange = StateB . state . CharRange . sortPair
 
 alternation :: StateB -> StateB -> StateB
 alternation l r = StateB $ branch l r
+
+oneOf :: [StateB] -> StateB
+oneOf = foldr alternation mempty
 
 zeroOrOne :: StateB -> StateB
 zeroOrOne sb = StateB $ branch mempty sb

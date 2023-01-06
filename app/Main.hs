@@ -21,7 +21,7 @@ main = do
 
   nfab <- either die return $ parseRegex pattern
   let nfa = buildNFA nfab
-  putStrLn $ show nfa
+  -- putStrLn $ show nfa
   -- putStrLn $ printDotScript nfa
 
   if printGraph
