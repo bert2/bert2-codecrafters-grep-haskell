@@ -18,6 +18,10 @@ dependencies:
 - hashable # when using your own data types with unordered-containers
 - mtl # monad transformers to help with nested monads
 
+default-extensions:
+- NamedFieldPuns
+- RecordWildCards
+
 library:
   source-dirs: src
 

@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns, RecordWildCards #-}
-
 module MyGrep.NFA.Eval (evalNFA, getOrMakeStateId, EvalState) where
 
 import qualified Control.Monad.State.Lazy as M

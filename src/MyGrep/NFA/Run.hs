@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module MyGrep.NFA.Run (runNFA) where
 
 import           Control.Monad (liftM2)

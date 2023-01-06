@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingVia, NamedFieldPuns #-}
+{-# LANGUAGE DerivingVia #-}
 
 module MyGrep.NFA.Build (
   StateB, buildNFA,

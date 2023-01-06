@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns, RecordWildCards #-}
-
 module MyGrep.NFA.Print (printDotScript, printGravizoLink) where
 
 import           Data.List (intersperse)
