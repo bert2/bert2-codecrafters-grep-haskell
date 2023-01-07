@@ -36,7 +36,7 @@ alternation :: StateB -> StateB -> StateB
 alternation l r = StateB $ branch l r
 
 oneOf :: [StateB] -> StateB
-oneOf = foldr alternation mempty
+oneOf = foldr1 alternation
 
 zeroOrOne :: StateB -> StateB
 zeroOrOne sb = StateB $ branch mempty sb

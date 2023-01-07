@@ -29,7 +29,7 @@ regex' = choice [
                                 NFA.charRange ('a', 'z'),
                                 NFA.literalChar '_'],
   digitCharClass  $> NFA.charRange ('0', '9'),
-  charClass      <&> NFA.charRange,
+  charClass      <&> NFA.oneOf . map NFA.charRange,
   litOrEscChar   <&> NFA.literalChar]
 
 startAnchorOrAnyString :: Parser NFA.StateB
@@ -44,8 +44,8 @@ digitCharClass = () <$ string "\\d" <?> "digit character class"
 wordCharClass :: Parser ()
 wordCharClass = () <$ string "\\w" <?> "word character class"
 
-charClass :: Parser (Char, Char)
-charClass = between (char '[') (char ']') charRange
+charClass :: Parser [(Char, Char)]
+charClass = between (char '[') (char ']') (some charRange)
   where charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar
         litOrEscChar = charWithReserved "^-\\[]"
 
@@ -57,7 +57,7 @@ charWithReserved res = escChar <|> litChar
   where litChar = noneOf res <?> "any character (except " ++ resLbl ++ ")"
         escChar = char '\\' *> resChar <?> "escape sequence"
         resChar = oneOf res <?> resLbl
-        resLbl = pprintChars res
+        resLbl  = pprintChars res
 
 pprintChars :: [Char] -> String
 pprintChars chars = (mconcat . intersperse ", " . init) quoted ++ ", or " ++ last quoted
