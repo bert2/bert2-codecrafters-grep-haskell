@@ -33,6 +33,7 @@ regex' = choice [
   digitCharClass  $> NFA.charRange ('0', '9'),
   negCharClass   <&> NFA.noneOf,
   posCharClass   <&> NFA.oneOf,
+  wildcard        $> NFA.anyChar,
   litOrEscChar   <&> NFA.literalChar]
 
 startAnchorOrAnyString :: Parser NFA.StateB
@@ -61,6 +62,9 @@ charClass positive litf rangef = between open (char ']') (some singleOrRange)
         singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
         charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
         litOrEscChar = charWithReserved "^$\\[]-"
+
+wildcard :: Parser ()
+wildcard = () <$ char '.'
 
 litOrEscChar :: Parser Char
 litOrEscChar = charWithReserved "^$\\[]"
