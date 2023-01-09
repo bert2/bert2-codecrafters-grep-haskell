@@ -47,16 +47,16 @@ wordCharClass :: Parser ()
 wordCharClass = () <$ string "\\w" <?> "word character class"
 
 negCharClass :: Parser [NFA.CharMatch]
-negCharClass = between (string "[^") (char ']') (some sinlgeOrRange)
-  where sinlgeOrRange = choice [singleChar <&> NFA.LiteralChar,
+negCharClass = between (string "[^") (char ']') (some singleOrRange)
+  where singleOrRange = choice [singleChar <&> NFA.LiteralChar,
                                 charRange  <&> NFA.CharRange]
         singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
         charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
         litOrEscChar = charWithReserved "^$\\[]-"
 
 charClass :: Parser [NFA.StateB]
-charClass = between (char '[') (char ']') (some sinlgeOrRange)
-  where sinlgeOrRange = choice [singleChar <&> NFA.literalChar,
+charClass = between (char '[') (char ']') (some singleOrRange)
+  where singleOrRange = choice [singleChar <&> NFA.literalChar,
                                 charRange  <&> NFA.charRange]
         singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
         charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
