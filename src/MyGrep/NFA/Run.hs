@@ -5,7 +5,6 @@ import Data.HashSet qualified as Set (empty, insert, member)
 import Data.HashSet (HashSet)
 import Data.Function ((&))
 import Data.Maybe (catMaybes)
-import GHC.Arr (inRange)
 import MyGrep.NFA.Base
 import MyGrep.NFA.Eval
 
@@ -16,10 +15,8 @@ consume :: [State] -> Char -> [State]
 consume ss char =
   ss & map (consume' char) & catMaybes & concatMap expand
   where consume' :: Char -> State -> Maybe State
-        consume' c (State AnyChar          n)               = Just n
-        consume' c (State (LiteralChar c') n) | c == c'     = Just n
-        consume' c (State (CharRange r)    n) | inRange r c = Just n
-        consume' _ _                                        = Nothing
+        consume' c (State m n) | matches m c = Just n
+        consume' _ _                         = Nothing
 
 expand :: State -> [State]
 expand = evalNFA visitedDefault evalUnvisited

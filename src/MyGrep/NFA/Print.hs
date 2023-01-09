@@ -48,9 +48,12 @@ makeEdge from to accepts = do
   return $ Edge fromId toId lbl
 
 printMatch :: Match -> String
-printMatch AnyChar                = "*"
-printMatch (LiteralChar c)        = esc c
-printMatch (CharRange (min, max)) = "[" ++ esc min ++ "-" ++ esc max ++ "]"
+printMatch AnyChar                            = "*"
+printMatch (PositiveMatch (LiteralChar c))    = esc c
+printMatch (PositiveMatch (CharRange (x, y))) = "[" ++ esc x ++ "-" ++ esc y ++ "]"
+printMatch (NegativeMatch ms)                 = "[^" ++ concatMap printMatch' ms ++ "]"
+  where printMatch' (LiteralChar c)    = esc c
+        printMatch' (CharRange (x, y)) = esc x ++ "-" ++ esc y
 
 esc :: Char -> String
 esc '\\' = "\\\\"

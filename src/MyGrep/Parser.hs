@@ -6,6 +6,7 @@ import Data.Functor ((<&>), ($>))
 import Data.List
 import Data.Maybe
 import Data.Void (Void)
+import MyGrep.NFA.Base qualified as NFA
 import MyGrep.NFA.Build qualified as NFA
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -29,6 +30,7 @@ regex' = choice [
                                 NFA.charRange ('a', 'z'),
                                 NFA.literalChar '_'],
   digitCharClass  $> NFA.charRange ('0', '9'),
+  negCharClass   <&> NFA.noneOf,
   charClass      <&> NFA.oneOf,
   litOrEscChar   <&> NFA.literalChar]
 
@@ -43,6 +45,14 @@ digitCharClass = () <$ string "\\d" <?> "digit character class"
 
 wordCharClass :: Parser ()
 wordCharClass = () <$ string "\\w" <?> "word character class"
+
+negCharClass :: Parser [NFA.CharMatch]
+negCharClass = between (string "[^") (char ']') (some sinlgeOrRange)
+  where sinlgeOrRange = choice [singleChar <&> NFA.LiteralChar,
+                                charRange  <&> NFA.CharRange]
+        singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
+        charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
+        litOrEscChar = charWithReserved "^$\\[]-"
 
 charClass :: Parser [NFA.StateB]
 charClass = between (char '[') (char ']') (some sinlgeOrRange)
