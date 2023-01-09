@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.Void (Void)
 import MyGrep.NFA.Base qualified as NFA
 import MyGrep.NFA.Build qualified as NFA
+import MyGrep.Util (sortPair)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -31,7 +32,7 @@ regex' = choice [
                                 NFA.literalChar '_'],
   digitCharClass  $> NFA.charRange ('0', '9'),
   negCharClass   <&> NFA.noneOf,
-  charClass      <&> NFA.oneOf,
+  posCharClass   <&> NFA.oneOf,
   litOrEscChar   <&> NFA.literalChar]
 
 startAnchorOrAnyString :: Parser NFA.StateB
@@ -47,17 +48,16 @@ wordCharClass :: Parser ()
 wordCharClass = () <$ string "\\w" <?> "word character class"
 
 negCharClass :: Parser [NFA.CharMatch]
-negCharClass = between (string "[^") (char ']') (some singleOrRange)
-  where singleOrRange = choice [singleChar <&> NFA.LiteralChar,
-                                charRange  <&> NFA.CharRange]
-        singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
-        charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
-        litOrEscChar = charWithReserved "^$\\[]-"
+negCharClass = charClass False NFA.LiteralChar (NFA.CharRange . sortPair) <?> "negative character class"
 
-charClass :: Parser [NFA.StateB]
-charClass = between (char '[') (char ']') (some singleOrRange)
-  where singleOrRange = choice [singleChar <&> NFA.literalChar,
-                                charRange  <&> NFA.charRange]
+posCharClass :: Parser [NFA.StateB]
+posCharClass = charClass True NFA.literalChar NFA.charRange <?> "positive character class"
+
+charClass :: Bool -> (Char -> a) -> ((Char, Char) -> a) -> Parser [a]
+charClass positive litf rangef = between open (char ']') (some singleOrRange)
+  where open = if positive then string "[" else string "[^"
+        singleOrRange = choice [singleChar <&> litf,
+                                charRange  <&> rangef]
         singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
         charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
         litOrEscChar = charWithReserved "^$\\[]-"
