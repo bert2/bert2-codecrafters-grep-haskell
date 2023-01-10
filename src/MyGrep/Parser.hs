@@ -26,8 +26,10 @@ regex = do
   return [start, pattern, end]
 
 opTbl :: [[Operator Parser NFA.StateB]]
-opTbl = [[Postfix (char '*' $> NFA.zeroOrMore)],
-         [InfixL  (char '|' $> flip NFA.alternation)]]
+opTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
+          Postfix (char '+' $> NFA.oneOrMore),
+          Postfix (char '?' $> NFA.zeroOrOne)],
+         [InfixL  (char '|' $> NFA.alternation)]]
 
 regex' :: Parser NFA.StateB
 regex' = choice [
@@ -72,7 +74,7 @@ wildcard :: Parser ()
 wildcard = () <$ char '.'
 
 litOrEscChar :: Parser Char
-litOrEscChar = charWithReserved "^$\\|[]"
+litOrEscChar = charWithReserved "^$\\|*+?[]"
 
 charWithReserved :: [Char] -> Parser Char
 charWithReserved res = escChar <|> litChar
@@ -83,4 +85,4 @@ charWithReserved res = escChar <|> litChar
 
 pprintChars :: [Char] -> String
 pprintChars chars = (mconcat . intersperse ", " . init) quoted ++ ", or " ++ last quoted
-  where quoted = map (\c -> "'" ++ [c] ++ "'") chars
+  where quoted = map (\c -> ['\'', c, '\'']) chars
