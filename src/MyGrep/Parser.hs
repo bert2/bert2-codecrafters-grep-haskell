@@ -1,6 +1,7 @@
 module MyGrep.Parser (parseRegex) where
 
 import Control.Monad
+import Control.Monad.Combinators.Expr
 import Data.Bifunctor
 import Data.Functor ((<&>), ($>))
 import Data.List
@@ -20,9 +21,12 @@ parseRegex = bimap errorBundlePretty mconcat . runParser regex ""
 regex :: Parser [NFA.StateB]
 regex = do
   start <- startAnchorOrAnyString
-  pattern <- regex'
+  pattern <- makeExprParser regex' opTbl
   end <- endAnchorOrAnyString <* eof
   return [start, pattern, end]
+
+opTbl :: [[Operator Parser NFA.StateB]]
+opTbl = [[InfixL (char '|' $> NFA.alternation)]]
 
 regex' :: Parser NFA.StateB
 regex' = choice [
@@ -67,7 +71,7 @@ wildcard :: Parser ()
 wildcard = () <$ char '.'
 
 litOrEscChar :: Parser Char
-litOrEscChar = charWithReserved "^$\\[]"
+litOrEscChar = charWithReserved "^$\\|[]"
 
 charWithReserved :: [Char] -> Parser Char
 charWithReserved res = escChar <|> litChar

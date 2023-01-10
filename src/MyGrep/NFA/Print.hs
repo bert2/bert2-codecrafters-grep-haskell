@@ -1,9 +1,11 @@
 module MyGrep.NFA.Print (printDotScript, printGravizoLink) where
 
+import Data.Char (isSpace, isControl)
 import Data.List (intersperse)
 import MyGrep.NFA.Base
 import MyGrep.NFA.Eval
 import MyGrep.URI qualified as URI
+import MyGrep.Util (charToHex)
 
 data Edge = Edge {from :: String, to :: String, lbl :: Maybe String}
 
@@ -58,4 +60,4 @@ printMatch (NegativeMatch ms)                 = "[^" ++ concatMap printMatch' ms
 esc :: Char -> String
 esc '\\' = "\\\\"
 esc '"'  = "\\\""
-esc c    = [c]
+esc c    = if isSpace c || isControl c then "#" ++ charToHex c else [c]
