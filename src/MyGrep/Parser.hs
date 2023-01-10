@@ -26,7 +26,8 @@ regex = do
   return [start, pattern, end]
 
 opTbl :: [[Operator Parser NFA.StateB]]
-opTbl = [[InfixL (char '|' $> NFA.alternation)]]
+opTbl = [[Postfix (char '*' $> NFA.zeroOrMore)],
+         [InfixL  (char '|' $> flip NFA.alternation)]]
 
 regex' :: Parser NFA.StateB
 regex' = choice [
