@@ -16,20 +16,20 @@ import Text.Megaparsec.Char
 type Parser = Parsec Void String
 
 parseRegex :: String -> Either String NFA.StateB
-parseRegex = bimap errorBundlePretty mconcat . runParser regex' ""
+parseRegex = first errorBundlePretty . runParser regex' ""
 
-regex' :: Parser [NFA.StateB]
+regex' :: Parser NFA.StateB
 regex' = do
   start <- optStartAnchor
   inner <- regex
   end <- optEndAnchor <* eof
-  return [start, inner, end]
+  return $ start <> inner <> end
 
 optStartAnchor :: Parser NFA.StateB
-optStartAnchor = maybe NFA.anyString (const mempty) <$> optional (char '^')
+optStartAnchor = optional (char '^') <&> maybe NFA.anyString (const mempty)
 
 optEndAnchor :: Parser NFA.StateB
-optEndAnchor = maybe NFA.anyString (const mempty) <$> optional (char '$')
+optEndAnchor   = optional (char '$') <&> maybe NFA.anyString (const mempty)
 
 regex :: Parser NFA.StateB
 regex = makeExprParser term opTbl
