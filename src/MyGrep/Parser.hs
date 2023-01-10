@@ -4,7 +4,7 @@ import Control.Monad
 import Control.Monad.Combinators.Expr
 import Data.Bifunctor
 import Data.Functor ((<&>), ($>))
-import Data.List
+import Data.List (intersperse)
 import Data.Maybe
 import Data.Void (Void)
 import MyGrep.NFA.Base qualified as NFA
@@ -16,14 +16,23 @@ import Text.Megaparsec.Char
 type Parser = Parsec Void String
 
 parseRegex :: String -> Either String NFA.StateB
-parseRegex = bimap errorBundlePretty mconcat . runParser regex ""
+parseRegex = bimap errorBundlePretty mconcat . runParser regex' ""
 
-regex :: Parser [NFA.StateB]
-regex = do
-  start <- startAnchorOrAnyString
-  pattern <- makeExprParser regex' opTbl
-  end <- endAnchorOrAnyString <* eof
-  return [start, pattern, end]
+regex' :: Parser [NFA.StateB]
+regex' = do
+  start <- optStartAnchor
+  inner <- regex
+  end <- optEndAnchor <* eof
+  return [start, inner, end]
+
+optStartAnchor :: Parser NFA.StateB
+optStartAnchor = maybe NFA.anyString (const mempty) <$> optional (char '^')
+
+optEndAnchor :: Parser NFA.StateB
+optEndAnchor = maybe NFA.anyString (const mempty) <$> optional (char '$')
+
+regex :: Parser NFA.StateB
+regex = makeExprParser term opTbl
 
 opTbl :: [[Operator Parser NFA.StateB]]
 opTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
@@ -31,8 +40,9 @@ opTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
           Postfix (char '?' $> NFA.zeroOrOne)],
          [InfixL  (char '|' $> NFA.alternation)]]
 
-regex' :: Parser NFA.StateB
-regex' = choice [
+term :: Parser NFA.StateB
+term = choice [
+  group          <&> fromMaybe mempty,
   wordCharClass   $> NFA.oneOf [NFA.charRange ('0', '9'),
                                 NFA.charRange ('A', 'Z'),
                                 NFA.charRange ('a', 'z'),
@@ -43,11 +53,8 @@ regex' = choice [
   wildcard        $> NFA.anyChar,
   litOrEscChar   <&> NFA.literalChar]
 
-startAnchorOrAnyString :: Parser NFA.StateB
-startAnchorOrAnyString = maybe NFA.anyString (const mempty) <$> optional (char '^')
-
-endAnchorOrAnyString :: Parser NFA.StateB
-endAnchorOrAnyString = maybe NFA.anyString (const mempty) <$> optional (char '$')
+group :: Parser (Maybe NFA.StateB)
+group = between (char '(') (char ')') (optional regex) <?> "match group"
 
 digitCharClass :: Parser ()
 digitCharClass = () <$ string "\\d" <?> "digit character class"
@@ -71,14 +78,14 @@ charClass positive litf rangef = between open (char ']') (some singleOrRange)
         litOrEscChar = charWithReserved "^$\\[]-"
 
 wildcard :: Parser ()
-wildcard = () <$ char '.'
+wildcard = () <$ char '.' <?> "wildcard"
 
 litOrEscChar :: Parser Char
-litOrEscChar = charWithReserved "^$\\|*+?[]"
+litOrEscChar = charWithReserved "^$\\|*+?()[]"
 
 charWithReserved :: [Char] -> Parser Char
 charWithReserved res = escChar <|> litChar
-  where litChar = noneOf res <?> "any character (except " ++ resLbl ++ ")"
+  where litChar = noneOf res <?> "character literal"
         escChar = char '\\' *> resChar <?> "escape sequence"
         resChar = oneOf res <?> resLbl
         resLbl  = pprintChars res

@@ -13,9 +13,9 @@ printGravizoLink :: State -> String
 printGravizoLink = ("https://g.gravizo.com/svg?" ++) . URI.encode . printDotScript
 
 printDotScript :: State -> String
-printDotScript nfa =
-  let edges = mconcat . intersperse ";" . map printEdge $ collectEdges nfa
-  in "digraph NFA{" ++ edges ++ "}"
+printDotScript Final = "digraph NFA{F}"
+printDotScript nfa   = "digraph NFA{" ++ edges ++ "}"
+  where edges = mconcat . intersperse ";" . map printEdge $ collectEdges nfa
 
 printEdge :: Edge -> String
 printEdge Edge{..} = from ++ "->" ++ to ++ maybe "" lblAttr lbl

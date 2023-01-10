@@ -21,16 +21,16 @@ buildNFA :: StateB -> State
 buildNFA sb = buildState sb Final
 
 anyChar :: StateB
-anyChar = StateB $ state AnyChar
+anyChar = StateB $ State AnyChar
 
 anyString :: StateB
 anyString = StateB $ loop ZeroOrMore anyChar
 
 literalChar :: Char -> StateB
-literalChar = StateB . state . PositiveMatch . LiteralChar
+literalChar = StateB . State . PositiveMatch . LiteralChar
 
 charRange :: (Char, Char) -> StateB
-charRange = StateB . state . PositiveMatch . CharRange . sortPair
+charRange = StateB . State . PositiveMatch . CharRange . sortPair
 
 alternation :: StateB -> StateB -> StateB
 alternation l r = StateB $ branch l r
@@ -39,10 +39,10 @@ oneOf :: [StateB] -> StateB
 oneOf = foldr1 alternation
 
 noneOf :: [CharMatch] -> StateB
-noneOf = StateB . state . NegativeMatch
+noneOf = StateB . State . NegativeMatch
 
 zeroOrOne :: StateB -> StateB
-zeroOrOne sb = StateB $ branch mempty sb
+zeroOrOne = StateB . branch mempty
 
 zeroOrMore :: StateB -> StateB
 zeroOrMore = StateB . loop ZeroOrMore
@@ -51,7 +51,7 @@ oneOrMore :: StateB -> StateB
 oneOrMore = StateB . loop OneOrMore
 
 branch :: StateB -> StateB -> State -> State
-branch left right join = split (buildState left join) (buildState right join)
+branch left right join = Split (buildState left join) (buildState right join)
 
 loop :: LoopBehavior -> StateB -> State -> State
 loop behavior body exit =
@@ -59,10 +59,4 @@ loop behavior body exit =
     ZeroOrMore -> entry
     OneOrMore  -> body'
   where body' = buildState body entry
-        entry = split body' exit
-
-state :: Match -> State -> State
-state accepts next = State{accepts, next}
-
-split :: State -> State -> State
-split left right = Split{left, right}
+        entry = Split body' exit
