@@ -21,7 +21,7 @@ parseRegex = first errorBundlePretty . runParser regex' ""
 regex' :: Parser NFA.StateB
 regex' = do
   start <- optStartAnchor
-  inner <- regex
+  inner <- lo
   end <- optEndAnchor <* eof
   return $ start <> inner <> end
 
@@ -30,6 +30,26 @@ optStartAnchor = optional (char '^') <&> maybe NFA.anyString (const mempty)
 
 optEndAnchor :: Parser NFA.StateB
 optEndAnchor   = optional (char '$') <&> maybe NFA.anyString (const mempty)
+
+makeExprParser' :: (Parser a -> Parser a)
+                -> [[Operator Parser a]]
+                -> [[Operator Parser a]]
+                -> (a -> a -> a)
+                -> Parser a
+makeExprParser' termf hiOps loOps implicitf = lo
+  where hi = makeExprParser hiTerm hiOps
+        lo = makeExprParser loTerm loOps
+        hiTerm = termf lo
+        loTerm = some hi <&> foldr1 implicitf
+
+hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
+            Postfix (char '+' $> NFA.oneOrMore),
+            Postfix (char '?' $> NFA.zeroOrOne)]]
+loOpTbl = [[InfixL  (char '|' $> NFA.alternation)]]
+hi :: Parser NFA.StateB
+hi = makeExprParser term hiOpTbl
+lo :: Parser NFA.StateB
+lo = makeExprParser (some hi <&> mconcat) loOpTbl
 
 regex :: Parser NFA.StateB
 regex = makeExprParser term opTbl
@@ -54,7 +74,7 @@ term = choice [
   litOrEscChar   <&> NFA.literalChar]
 
 group :: Parser (Maybe NFA.StateB)
-group = between (char '(') (char ')') (optional regex) <?> "match group"
+group = between (char '(') (char ')') (optional lo) <?> "match group"
 
 digitCharClass :: Parser ()
 digitCharClass = () <$ string "\\d" <?> "digit character class"
