@@ -21,7 +21,7 @@ parseRegex = first errorBundlePretty . runParser regex' ""
 regex' :: Parser NFA.StateB
 regex' = do
   start <- optStartAnchor
-  inner <- lo
+  inner <- regex
   end <- optEndAnchor <* eof
   return $ start <> inner <> end
 
@@ -31,38 +31,23 @@ optStartAnchor = optional (char '^') <&> maybe NFA.anyString (const mempty)
 optEndAnchor :: Parser NFA.StateB
 optEndAnchor   = optional (char '$') <&> maybe NFA.anyString (const mempty)
 
-makeExprParser' :: (Parser a -> Parser a)
-                -> [[Operator Parser a]]
-                -> [[Operator Parser a]]
-                -> (a -> a -> a)
-                -> Parser a
-makeExprParser' termf hiOps loOps implicitf = lo
-  where hi = makeExprParser hiTerm hiOps
-        lo = makeExprParser loTerm loOps
-        hiTerm = termf lo
-        loTerm = some hi <&> foldr1 implicitf
-
+hiOpTbl :: [[Operator Parser NFA.StateB]]
 hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
             Postfix (char '+' $> NFA.oneOrMore),
             Postfix (char '?' $> NFA.zeroOrOne)]]
+
+loOpTbl :: [[Operator Parser NFA.StateB]]
 loOpTbl = [[InfixL  (char '|' $> NFA.alternation)]]
-hi :: Parser NFA.StateB
-hi = makeExprParser term hiOpTbl
-lo :: Parser NFA.StateB
-lo = makeExprParser (some hi <&> mconcat) loOpTbl
+
+implicitOp :: NFA.StateB -> NFA.StateB -> NFA.StateB
+implicitOp = (<>)
 
 regex :: Parser NFA.StateB
-regex = makeExprParser term opTbl
+regex = makeExprParser' term hiOpTbl loOpTbl implicitOp
 
-opTbl :: [[Operator Parser NFA.StateB]]
-opTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
-          Postfix (char '+' $> NFA.oneOrMore),
-          Postfix (char '?' $> NFA.zeroOrOne)],
-         [InfixL  (char '|' $> NFA.alternation)]]
-
-term :: Parser NFA.StateB
-term = choice [
-  group          <&> fromMaybe mempty,
+term :: Parser NFA.StateB -> Parser NFA.StateB
+term term' = choice [
+  group term'    <&> fromMaybe mempty,
   wordCharClass   $> NFA.oneOf [NFA.charRange ('0', '9'),
                                 NFA.charRange ('A', 'Z'),
                                 NFA.charRange ('a', 'z'),
@@ -73,8 +58,8 @@ term = choice [
   wildcard        $> NFA.anyChar,
   litOrEscChar   <&> NFA.literalChar]
 
-group :: Parser (Maybe NFA.StateB)
-group = between (char '(') (char ')') (optional lo) <?> "match group"
+group :: Parser NFA.StateB -> Parser (Maybe NFA.StateB)
+group term = between (char '(') (char ')') (optional term) <?> "match group"
 
 digitCharClass :: Parser ()
 digitCharClass = () <$ string "\\d" <?> "digit character class"
@@ -113,3 +98,15 @@ charWithReserved res = escChar <|> litChar
 pprintChars :: [Char] -> String
 pprintChars chars = (mconcat . intersperse ", " . init) quoted ++ ", or " ++ last quoted
   where quoted = map (\c -> ['\'', c, '\'']) chars
+
+-- creates an expr parser that understands implicit operators
+makeExprParser' :: (Parser a -> Parser a)
+                -> [[Operator Parser a]]
+                -> [[Operator Parser a]]
+                -> (a -> a -> a)
+                -> Parser a
+makeExprParser' termf hiOps loOps implicitf = lo
+  where hi = makeExprParser hiTerm hiOps
+        lo = makeExprParser loTerm loOps
+        hiTerm = termf lo
+        loTerm = some hi <&> foldr1 implicitf
