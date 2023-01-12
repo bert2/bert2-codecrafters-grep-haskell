@@ -20,16 +20,11 @@ parseRegex = first errorBundlePretty . runParser regex' ""
 
 regex' :: Parser NFA.StateB
 regex' = do
-  start <- optStartAnchor
-  inner <- regex
-  end <- optEndAnchor <* eof
+  start <- optional (char '^') <&> maybe NFA.anyString (const mempty)
+  inner <- optional regex      <&> fromMaybe mempty
+  end   <- optional (char '$') <&> maybe NFA.anyString (const mempty)
+  _     <- eof
   return $ start <> inner <> end
-
-optStartAnchor :: Parser NFA.StateB
-optStartAnchor = optional (char '^') <&> maybe NFA.anyString (const mempty)
-
-optEndAnchor :: Parser NFA.StateB
-optEndAnchor   = optional (char '$') <&> maybe NFA.anyString (const mempty)
 
 hiOpTbl :: [[Operator Parser NFA.StateB]]
 hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
@@ -37,7 +32,7 @@ hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
             Postfix (char '?' $> NFA.zeroOrOne)]]
 
 loOpTbl :: [[Operator Parser NFA.StateB]]
-loOpTbl = [[InfixL  (char '|' $> NFA.alternation)]]
+loOpTbl = [[InfixL (char '|' $> NFA.alternation)]]
 
 implicitOp :: NFA.StateB -> NFA.StateB -> NFA.StateB
 implicitOp = (<>)
