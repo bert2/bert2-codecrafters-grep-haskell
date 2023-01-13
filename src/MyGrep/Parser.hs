@@ -38,8 +38,9 @@ quantRep :: Parser (NFA.StateB -> NFA.StateB)
 quantRep = between (char '{') (char '}') range
   where range :: Parser (NFA.StateB -> NFA.StateB)
         range = do
-          (n, _) <- range'
-          return $ NFA.exactly n
+          (min, max) <- range'
+          return $ case max of Just max -> NFA.between min max
+                               Nothing  -> NFA.atLeast min
         range' :: Parser (Int, Maybe Int)
         range' = do
           min <- decimal

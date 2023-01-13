@@ -1,11 +1,6 @@
 {-# LANGUAGE DerivingVia #-}
 
-module MyGrep.NFA.Build (
-  StateB, buildNFA,
-  anyChar, anyString, literalChar, charRange,
-  branch, oneOf, noneOf,
-  zeroOrOne, zeroOrMore, oneOrMore, exactly, atLeast, atMost, between
-) where
+module MyGrep.NFA.Build where
 
 import Data.Monoid
 import MyGrep.NFA.Base
@@ -25,7 +20,7 @@ anyChar :: StateB
 anyChar = StateB $ State AnyChar
 
 anyString :: StateB
-anyString = StateB $ loop ZeroOrMore anyChar
+anyString = loop ZeroOrMore anyChar
 
 literalChar :: Char -> StateB
 literalChar = StateB . State . PositiveMatch . LiteralChar
@@ -46,16 +41,23 @@ zeroOrOne :: StateB -> StateB
 zeroOrOne = branch mempty
 
 zeroOrMore :: StateB -> StateB
-zeroOrMore = StateB . loop ZeroOrMore
+zeroOrMore = loop ZeroOrMore
 
 oneOrMore :: StateB -> StateB
-oneOrMore = StateB . loop OneOrMore
+oneOrMore = loop OneOrMore
+
+loop :: LoopBehavior -> StateB -> StateB
+loop behavior body = StateB \exit ->
+  let body' = buildState body entry
+      entry = Split body' exit
+  in case behavior of ZeroOrMore -> entry
+                      OneOrMore  -> body'
 
 exactly :: Int -> StateB -> StateB
 exactly n = mconcat . replicate n
 
 atLeast :: Int -> StateB -> StateB
-atLeast n sb = exactly n sb <> zeroOrMore sb
+atLeast n sb = exactly n sb <> loop ZeroOrMore sb
 
 atMost :: Int -> StateB -> StateB
 atMost n _  | n < 1 = mempty
@@ -65,11 +67,3 @@ between :: Int -> Int -> StateB -> StateB
 between min max sb = requireds <> optionals
   where requireds = exactly min sb
         optionals = atMost (max - min) sb
-
-loop :: LoopBehavior -> StateB -> State -> State
-loop behavior body exit =
-  case behavior of
-    ZeroOrMore -> entry
-    OneOrMore  -> body'
-  where body' = buildState body entry
-        entry = Split body' exit
