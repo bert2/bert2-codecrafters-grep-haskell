@@ -12,6 +12,7 @@ import MyGrep.NFA.Build qualified as NFA
 import MyGrep.Util (sortPair)
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer (decimal)
 
 type Parser = Parsec Void String
 
@@ -26,13 +27,30 @@ regex' = do
   _     <- eof
   return $ start <> inner <> end
 
-hiOpTbl :: [[Operator Parser NFA.StateB]]
+hiOpTbl, loOpTbl :: [[Operator Parser NFA.StateB]]
 hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
             Postfix (char '+' $> NFA.oneOrMore),
-            Postfix (char '?' $> NFA.zeroOrOne)]]
+            Postfix (char '?' $> NFA.zeroOrOne),
+            Postfix quantRep]]
+loOpTbl = [[InfixL  (char '|' $> NFA.branch)]]
 
-loOpTbl :: [[Operator Parser NFA.StateB]]
-loOpTbl = [[InfixL (char '|' $> NFA.alternation)]]
+quantRep :: Parser (NFA.StateB -> NFA.StateB)
+quantRep = between (char '{') (char '}') range
+  where range :: Parser (NFA.StateB -> NFA.StateB)
+        range = do
+          (n, _) <- range'
+          return $ NFA.exactly n
+        range' :: Parser (Int, Maybe Int)
+        range' = do
+          min <- decimal
+          sep <- optional (char ',')
+          max <- case sep of Just _  -> optional $ decimalGte min
+                             Nothing -> return $ Just min
+          return (min, max)
+        decimalGte :: Int -> Parser Int
+        decimalGte min = decimal >>= \n -> if n < min
+          then fail $ "exected integer not lower than " ++ show min
+          else return n
 
 implicitOp :: NFA.StateB -> NFA.StateB -> NFA.StateB
 implicitOp = (<>)
@@ -75,13 +93,13 @@ charClass positive litf rangef = between open (char ']') (some singleOrRange)
                                 charRange  <&> rangef]
         singleChar = try $ litOrEscChar <* notFollowedBy (char '-')
         charRange = (,) <$> litOrEscChar <* char '-' <*> litOrEscChar <?> "character range"
-        litOrEscChar = charWithReserved "^$\\[]-"
+        litOrEscChar = charWithReserved "^\\[]-"
 
 wildcard :: Parser ()
 wildcard = () <$ char '.' <?> "wildcard"
 
 litOrEscChar :: Parser Char
-litOrEscChar = charWithReserved "^$\\|*+?()[]"
+litOrEscChar = charWithReserved "^$\\|*+?()[]{}"
 
 charWithReserved :: [Char] -> Parser Char
 charWithReserved res = escChar <|> litChar

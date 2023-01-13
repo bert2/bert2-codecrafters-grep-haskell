@@ -3,7 +3,8 @@
 module MyGrep.NFA.Build (
   StateB, buildNFA,
   anyChar, anyString, literalChar, charRange,
-  alternation, oneOf, noneOf, zeroOrOne, zeroOrMore, oneOrMore
+  branch, oneOf, noneOf,
+  zeroOrOne, zeroOrMore, oneOrMore, exactly, atLeast, atMost, between
 ) where
 
 import Data.Monoid
@@ -32,17 +33,17 @@ literalChar = StateB . State . PositiveMatch . LiteralChar
 charRange :: (Char, Char) -> StateB
 charRange = StateB . State . PositiveMatch . CharRange . sortPair
 
-alternation :: StateB -> StateB -> StateB
-alternation l r = StateB $ branch l r
+branch :: StateB -> StateB -> StateB
+branch left right = StateB \join -> Split (buildState left join) (buildState right join)
 
 oneOf :: [StateB] -> StateB
-oneOf = foldr1 alternation
+oneOf = foldr1 branch
 
 noneOf :: [CharMatch] -> StateB
 noneOf = StateB . State . NegativeMatch
 
 zeroOrOne :: StateB -> StateB
-zeroOrOne = StateB . branch mempty
+zeroOrOne = branch mempty
 
 zeroOrMore :: StateB -> StateB
 zeroOrMore = StateB . loop ZeroOrMore
@@ -50,8 +51,20 @@ zeroOrMore = StateB . loop ZeroOrMore
 oneOrMore :: StateB -> StateB
 oneOrMore = StateB . loop OneOrMore
 
-branch :: StateB -> StateB -> State -> State
-branch left right join = Split (buildState left join) (buildState right join)
+exactly :: Int -> StateB -> StateB
+exactly n = mconcat . replicate n
+
+atLeast :: Int -> StateB -> StateB
+atLeast n sb = exactly n sb <> zeroOrMore sb
+
+atMost :: Int -> StateB -> StateB
+atMost n _  | n < 1 = mempty
+atMost n sb         = zeroOrOne $ sb <> atMost (n - 1) sb
+
+between :: Int -> Int -> StateB -> StateB
+between min max sb = requireds <> optionals
+  where requireds = exactly min sb
+        optionals = atMost (max - min) sb
 
 loop :: LoopBehavior -> StateB -> State -> State
 loop behavior body exit =
