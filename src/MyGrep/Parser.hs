@@ -17,10 +17,10 @@ import Text.Megaparsec.Char.Lexer (decimal)
 type Parser = Parsec Void String
 
 parseRegex :: String -> Either String NFA.StateB
-parseRegex = first errorBundlePretty . runParser regex' ""
+parseRegex = first errorBundlePretty . runParser anchoredRegex ""
 
-regex' :: Parser NFA.StateB
-regex' = do
+anchoredRegex :: Parser NFA.StateB
+anchoredRegex = do
   start <- optional (char '^') <&> maybe NFA.anyString (const mempty)
   inner <- optional regex      <&> fromMaybe mempty
   end   <- optional (char '$') <&> maybe NFA.anyString (const mempty)
@@ -28,30 +28,19 @@ regex' = do
   return $ start <> inner <> end
 
 hiOpTbl, loOpTbl :: [[Operator Parser NFA.StateB]]
-hiOpTbl = [[Postfix (char '*' $> NFA.zeroOrMore),
-            Postfix (char '+' $> NFA.oneOrMore),
-            Postfix (char '?' $> NFA.zeroOrOne),
-            Postfix quantRep]]
-loOpTbl = [[InfixL  (char '|' $> NFA.branch)]]
+hiOpTbl = [[Postfix (char '*'  $> NFA.zeroOrMore),
+            Postfix (char '+'  $> NFA.oneOrMore),
+            Postfix (char '?'  $> NFA.zeroOrOne),
+            Postfix (quantRep <&> NFA.repeat)]]
+loOpTbl = [[InfixL  (char '|'  $> NFA.branch)]]
 
-quantRep :: Parser (NFA.StateB -> NFA.StateB)
-quantRep = between (char '{') (char '}') range
-  where range :: Parser (NFA.StateB -> NFA.StateB)
-        range = do
-          (min, max) <- range'
-          return $ case max of Just max -> NFA.between min max
-                               Nothing  -> NFA.atLeast min
-        range' :: Parser (Int, Maybe Int)
-        range' = do
-          min <- decimal
-          sep <- optional (char ',')
-          max <- case sep of Just _  -> optional $ decimalGte min
-                             Nothing -> return $ Just min
-          return (min, max)
-        decimalGte :: Int -> Parser Int
-        decimalGte min = decimal >>= \n -> if n < min
-          then fail $ "exected integer not lower than " ++ show min
-          else return n
+quantRep :: Parser (Int, Maybe Int)
+quantRep = between (char '{') (char '}') do
+  min <- decimal
+  sep <- optional (char ',')
+  max <- case sep of Just _  -> optional $ decimalGte min
+                     Nothing -> return $ Just min
+  return (min, max)
 
 implicitOp :: NFA.StateB -> NFA.StateB -> NFA.StateB
 implicitOp = (<>)
@@ -112,6 +101,11 @@ charWithReserved res = escChar <|> litChar
 pprintChars :: [Char] -> String
 pprintChars chars = (mconcat . intersperse ", " . init) quoted ++ ", or " ++ last quoted
   where quoted = map (\c -> ['\'', c, '\'']) chars
+
+decimalGte :: Int -> Parser Int
+decimalGte min = decimal >>= \n -> if n < min
+  then fail $ "exected integer not lower than " ++ show min
+  else return n
 
 -- creates an expr parser that understands implicit operators
 makeExprParser' :: (Parser a -> Parser a)

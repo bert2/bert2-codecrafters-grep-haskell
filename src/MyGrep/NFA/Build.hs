@@ -67,3 +67,8 @@ between :: Int -> Int -> StateB -> StateB
 between min max sb = requireds <> optionals
   where requireds = exactly min sb
         optionals = atMost (max - min) sb
+
+repeat :: (Int, Maybe Int) -> StateB -> StateB
+repeat (min, max) = case max of
+  Just max -> between min max
+  Nothing  -> atLeast min
