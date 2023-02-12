@@ -1,14 +1,10 @@
 module Main where
 
 import Control.Monad (when)
-import Data.Either
 import MyGrep.Args qualified as Args
-import MyGrep.NFA.Base
 import MyGrep.NFA.Build
-import MyGrep.NFA.Eval
 import MyGrep.NFA.Print
 import MyGrep.NFA.Run
-import MyGrep.NFA.Show
 import MyGrep.Parser
 import System.Exit
 
@@ -22,8 +18,6 @@ main = do
 
   nfab <- either die return $ parseRegex pattern
   let nfa = buildNFA nfab
-  -- putStrLn $ show nfa
-  -- putStrLn $ printDotScript nfa
 
   when printGraph do
     putStrLn $ printGravizoLink nfa

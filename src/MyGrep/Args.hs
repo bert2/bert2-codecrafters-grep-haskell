@@ -38,8 +38,8 @@ parseArgs :: IO ([String], [String])
 parseArgs = do
   args <- getArgs
   return $ span isSwitch args
-    where isSwitch :: String -> Bool
-          isSwitch arg = length arg == 2 && head arg == '-'
+    where isSwitch ['-', _] = True
+          isSwitch _        = False
 
 printAndExit :: String -> String -> IO a
 printAndExit usage error = do

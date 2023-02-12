@@ -10,4 +10,4 @@ encodeChar :: Char -> String
 encodeChar c = if isAllowed c then [c] else "%" ++ charToHex c
 
 isAllowed :: Char -> Bool
-isAllowed c = isAlphaNum c || (c `elem` "-_.~")
+isAllowed c = isAlphaNum c || c `elem` "-_.~"
